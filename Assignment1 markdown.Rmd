@@ -1,0 +1,291 @@
+---
+title: "STAT680Assignment1"
+author: "Ka Yu Lau 41895118"
+date: "23/05/2018"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(knitr)
+opts_chunk$set(echo = FALSE)
+paramo <- read.table('~/Documents/Macquarie University/Study/STAT680/Assignment1/paramo.dat', header = T)
+cake = read.table('~/Documents/Macquarie University/Study/STAT680/Assignment1/cake.dat', header = T)
+powercell = read.table('~/Documents/Macquarie University/Study/STAT680/Assignment1/powercell.dat', header = T)
+```
+
+## Question 1
+(a)  
+For this quesiton, the response and predictors of the regression are as follow:
+Response: N
+Predictors: AR, EL, DEc, DNI
+
+###Scatterplot Matrix
+
+```{r }
+pairs(paramo, panel = panel.smooth)
+```
+
+From the scatterlot matix, there are correlation bewtween the response and all the predictor variables. However, AR and EL, DEc and DNI is correlated with each other.
+
+###Correlation Matrix
+```{r}
+cor(paramo)
+```
+
+This shows that the response N is positively correlate with AR and EL, meanwhile it is negatively corelate with DEc and DNI. 
+
+(b)  
+the mathematical multiple regression model:
+N = β~0~ + β~1~AR + β~2~ EL + β~3~ DEc + β~4~ DNI +ε
+where 
+b~0~:interception
+β~1~,β~2~,β~3~,β~4~ : coefficients on the predictors 
+ε : random variation
+
+###Overall ANOVA
+####Hypotheses
+H~0~ : β~1~ = β~2~ = β~3~ = β~4~ = 0
+H~1~ : at least 1 β != 0
+
+```{r}
+paramo.lm = lm(N~AR + EL + DEc + DNI, data = paramo)
+paramo.aov = aov(paramo.lm)
+summary(paramo.aov)
+```
+```{r}
+paramo.fullreg = 508.9 + 45.9 + 537.4 + 2.1
+paramo.regms = paramo.fullreg/4
+paramo.f = paramo.regms/45
+paramo.pvalue = pf(paramo.f,4,9,lower.tail=F)
+```
+
+
+Full RegSS = RegSS~AR~ + RegSS~EL~ + RegSS~DEc~ + RegSS~DNI~
+            = 508.9 + 45.9 + 537.4 + 2.1
+            = `r paramo.fullreg`
+
+RegMS = Full RegSS/k
+      = `r paramo.fullreg`/4
+      = `r paramo.regms`
+
+**Test Statistic** : F~obs~ = RegressionMS/ResidualMS
+                         = `r paramo.regms`/45
+                         = `r paramo.f`
+
+**Null Distribution** : F~4,9~
+
+**P value** = P(F~4,9~ > `r paramo.f`) = `r paramo.pvalue` <0.05
+
+
+There is a significant relationship between the response and at least one of of the predictor variables.
+
+(c)  
+###The full model
+
+####Summary of the full model
+```{r}
+summary(paramo.lm)
+```
+
+####Validate Assumption
+```{r}
+par(mfrow = c(1,2))
+plot(paramo.lm, which = 1:2)
+```
+
+The quantile plot of redisuals is linear and there are no pattern on residuals. The assumption of variation independent and normal distributed residuals holds.  
+
+Although the model is significant as a whole, the summary shows that only DEc and AR has significant relationship with the reponse. Hence, there are room for improvement by removing insignificant predictor variables DEc and AR.
+
+
+(d) From the result, R^2^ is 0.7301 which means 73.01% of the data is explained by this regression model.
+
+
+(e)
+
+```{r}
+paramo.lm2 = lm(N~AR + DEc, data = paramo)
+paramo.aov2 = aov(paramo.lm2)
+summary(paramo.aov2)
+summary(paramo.lm2)
+```
+The final fitted model:
+N = 30.797 + (6.683)AR - (0.017)DEC  
+
+(f)
+The final fitted model's R^2^ and adjusted R^2^ is 71.13% and 65.88% respectively. Compared to the overall model, R^2^ has slightly decrease but adjusted R^2^ has increased. This is because R^2^ always increase with more variables, meanwhile adjusted R^2^ penalised for number of variables added into the model.
+
+(g)
+```{r}
+paramo.t =qt(0.025, 11, lower.tail=F)
+ARci.upper = 6.683038 + paramo.t*(2.264403)
+ARci.lower = 6.683038 - paramo.t*(2.264403)
+```
+
+
+**95% confidence of AR**
+t~11,0.025~ = `r paramo.t`  
+β~AR~ ± t*s.e.(β~AR~)  
+= 6.683038 ± `r paramo.t`*(2.264403)  
+= [`r ARci.lower`,`r ARci.upper`]  
+We are 95% confidence the true coeficient of AR in the β~AR~ is within [`r ARci.lower`,`r ARci.upper`].
+
+
+##Question 2
+(a)  
+```{r}
+
+powercell.quan = lm(cycle~temp + I(temp^2) + charge + I(charge^2) + I(charge * temp),data = powercell)
+powercell.linear=lm(cycle~temp + charge ,data = powercell)
+powercell.aov1=aov(powercell.quan)
+powercell.aov2=aov(powercell.linear)
+```
+
+###multiple quadratic model:  
+```{r}
+summary(powercell.quan)$coefficient
+```
+
+The fitted equation:
+Y = 380.2312 + 13.6618temp - 0.2083temp^2^ -763.8034charge + 117.2094charge^2^ + 4.7829charge*temp
+
+
+###multple linear equation:  
+```{r}
+summary(powercell.linear)$coefficient
+```
+The fitted model:  
+Y = 153.826 + 12.483temp - 409.695charge
+
+(b)
+###Covariance Matrix  
+```{r} 
+
+cov(powercell)
+powercell.regss = (12.483)*(87-1)*(2692.2872) + (- 409.695)*(87-1)*(-46.1101258)
+
+```
+
+RegSS = b~temp~S~temp,cycle~ +b~charge~S~charge,cycle~  
+      = b~temp~(n-1) cov(temp,cycle) + b~charge~(n-1) cov(charge,cycle)  
+      = (12.483)(87-1)(2692.2872) + (- 409.695)(87-1)(-46.1101258)  
+      = `r powercell.regss`
+      
+(c)
+###ANOVA for multiple quadratic regression
+```{r}
+
+summary(powercell.aov1)
+
+```
+
+###ANOVA for multiple linear regression
+```{r}
+summary(powercell.aov2)
+```
+###Hypothese
+Let Model 1 and Model 2 Mod be the multiple linear regression model and multiple quadratic model
+
+H~0~ : Model 1 = Model 2 or β~temp~temp^2^+β~charge~charge^2^ = 0
+H~1~ : Model 1 != Model 2 
+
+###ANOVA comparing the two model
+```{r}
+powercell.modelaov = anova(powercell.linear,powercell.quan)
+powercell.modelaov
+```
+p-value = 0.003735 < 0.05
+Hence, there is an significant effect the extra varaibles contributed to the model.
+We can also see the RSS has decreased in model 2 compare to model 1 which means the model has stronger explanatory power to the model.
+
+
+###Residual and Normal Quantile Plots
+####Mulitple Linear Regression (Model 1)
+```{r}
+par(mfrow = c(1,2))
+plot(powercell.linear, which = 1:2)
+```
+
+####Multiple Quadratic regression (Model 2)
+```{r}
+par(mfrow = c(1,2))
+plot(powercell.quan, which = 1:2)
+```
+
+Comparing the two models, both of their quantile plot are linear which shows the resduals are in normal distribution. However, for residual plot, we see in model 1 the residuals tends to have more positive value in the middle of the plot, whereas for model 2 the residuals concentraled at the right of the plot but the residuals distributed randomly on above and below 0. Hence, the result of model 2 is more adequate.
+
+#Question 3
+(a) 
+```{r}
+summary(cake)
+```  
+There are same number of observations in every treatment so this is a balanced test.
+
+
+(b)
+```{r}
+with(cake,interaction.plot(Temp, Recipe, Angle,
+                 trace.label = "Recipe", xlab = "Temperature", ylab = "Angle",col = 2:4))
+
+``` 
+From the plot there could be a possible interaction between the factors and the response since the lines intercepts (have different slope) at some level of temperature. However, the overall slope are similar for Recipes which may indicate interaction is not strong.
+
+```{r}
+boxplot(Angle~Recipe + Temp, data = cake,
+          legend = "Recipe", xlab = "Angle", col = 2:4, 
+          horizontal=T, las=1)
+
+```  
+The boxplot shows the variablity between level of each factor. In general, Recipe B and C has breaking angle similarly except when Temp = 205C, B is much lower than C. Oppositely, the breaking angle is different for Recipe A in most of the temperature except for Temp = 195C or 225C.  
+
+
+(c)
+
+The regression model
+Y = μ + α~i~ + β~j~Χ + γ~ij~Χ + ε
+where Y is Responese:  Angle
+α is the Recipe effect
+β is the factor Temperature effect
+γ is the interaction effect of recipe and temperature
+ε is unexplained variation
+
+
+###Hypothises: 
+H~0~ γ~ij~=0, H~1~: γ~ij~ != 0
+
+###Assumption Validation:
+
+Without transformation, the residual plot is belowed 0 and the normal quantile plot shows curvature.
+```{r}
+cake.lm1 = lm(Angle ~ Recipe*Temp, data = cake)
+par(mfrow=c(1,2))
+plot(cake.lm1, which = 1:2)
+```
+
+
+As result, log tranformation is done on response (Angle). And the residual model is more random and the quantile plot look fairly linear than previous. 
+
+```{r}
+cake.lm2 = lm(log(Angle) ~ Recipe*Temp, data = cake)
+par(mfrow=c(1,2))
+plot(cake.lm2, which = 1:2)
+```
+
+
+
+```{r}
+cake.aov = aov(cake.lm2)
+summary(cake.aov)
+```
+
+The P value of Recipe:Temp is >0.05, there is not evidence that the interaction effect of the two factors is nonzero.
+
+
+(d)
+from (b), although the prelimenry interaction plot the overall slope are similar for Recipes which indicates interaction is not strong. There are no significant variation from the boxplot.
+
+In (c), our ANOVA shows that only temperature is significant to the breaking angle.
